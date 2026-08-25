@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "revision": 2,
+  "revision": 3,
   "defaults": {
     "configTtlMs": 900000,
-    "providerTimeoutMs": 4500,
-    "totalBudgetMs": 18000,
+    "providerTimeoutMs": 3500,
+    "totalBudgetMs": 19000,
     "maxAttempts": 4,
     "circuitBreaker": {
       "failureThreshold": 3,
@@ -16,6 +16,20 @@
       "hq",
       "sq",
       "lq"
+    ]
+  },
+  "youtubeFallback": {
+    "enabled": true,
+    "maxInstances": 3,
+    "searchLimit": 8,
+    "minScore": 45,
+    "durationToleranceSec": 35,
+    "instances": [
+      "https://pipedapi.kavin.rocks",
+      "https://pipedapi.leptons.xyz",
+      "https://piped-api.privacy.com.de",
+      "https://pipedapi.adminforge.de",
+      "https://api.piped.private.coffee"
     ]
   },
   "providers": [
