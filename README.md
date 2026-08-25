@@ -16,13 +16,26 @@ dist/splayer-source.js
 - `tx`
 - `kg`
 
+## 当前聚合音源
+
+插件会按优先级依次尝试，前一个失败自动切到下一个：
+
+1. `Xinghai Main` — `wy / tx / kg`
+2. `Huibq Share v3` — `wy / tx / kg`
+3. `Juhe Direct` — `wy / tx / kg`，仅接受直接返回播放 URL 的安全模式
+4. `iKun Public` — `wy`
+
+因此网易源最多有 4 路回退，QQ/酷狗最多有 3 路回退。
+
+六音、QDY、Flower、LX、Grass 等上游仍由 watcher 观察版本变化，但不会自动执行或复制未知/混淆脚本，也不会自动接入需要登录 Cookie、会员/SVIP 或其他访问控制的链路。
+
 ## 已经做好的能力
 
 - 多 Provider 自动回退
 - Provider 优先级
 - GitHub 健康状态降级
 - 客户端连续失败熔断
-- 18 秒总预算，避免超过 SPlayer `musicUrl` 默认调用时间
+- 总播放解析预算，避免超过 SPlayer `musicUrl` 调用时间
 - 远程 `providers.json` 热更新
 - 内嵌最后一次构建配置作为 GitHub 不可达时的 fallback
 - `@updateUrl` 原生 SPlayer 更新
@@ -31,6 +44,7 @@ dist/splayer-source.js
 - GitHub Actions 上游 SHA 观察
 - 不执行远端 JS
 - 不需要本地 Node 后台
+- 不需要云端 resolver
 - Actions/构建零第三方 npm 依赖
 
 ## 仓库结构
@@ -73,7 +87,7 @@ dist/splayer-source.js
 本项目采用：
 
 ```text
-第三方/自建/官方授权 API
+公开/自建/官方授权 API
           ↓
 统一 JSON Provider 配置
           ↓
@@ -102,7 +116,7 @@ GitHub workflow 可观察上游仓库版本变化，但不会自动执行未知�
 
 `1.0.23`
 
-SPlayer 通过 `@updateUrl` 自动检查更新。
+SPlayer 通过 `@updateUrl` 检查更新。
 
 ## 本地验证（可选）
 
