@@ -1,0 +1,17 @@
+{
+  "name": "splayer-koyeb-youtube-resolver",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloud YouTube fallback resolver for SPlayer, designed for Koyeb.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check youtube.mjs && node --check matcher.mjs && node --test matcher.test.mjs"
+  },
+  "dependencies": {
+    "youtubei.js": "18.0.0"
+  }
+}
