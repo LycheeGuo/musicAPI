@@ -62,9 +62,10 @@ export async function findBestVideo({ name, singer, duration, minScore = 45 }) {
   return { best, ranked: ranked.slice(0, 5) };
 }
 
-export async function getAudioStreamUrl(videoId) {
+export async function getAudioStreamUrl(videoId, { forceRefresh = false } = {}) {
   const cached = streamCache.get(videoId);
-  if (cached && Date.now() - cached.at < STREAM_CACHE_MS) return cached.value;
+  if (!forceRefresh && cached && Date.now() - cached.at < STREAM_CACHE_MS) return cached.value;
+  if (forceRefresh) streamCache.delete(videoId);
 
   const yt = await getClient();
   let lastError;
