@@ -109,7 +109,7 @@ async function proxyStream(req, res, videoId) {
 
   // A signed URL may occasionally expire between resolve and first byte. Refresh once.
   if (upstream.status === 403 || upstream.status === 410) {
-    const fresh = await getAudioStreamUrl(videoId);
+    const fresh = await getAudioStreamUrl(videoId, { forceRefresh: true });
     upstream = await fetch(fresh.url, { method: "GET", headers, redirect: "follow" });
   }
 
