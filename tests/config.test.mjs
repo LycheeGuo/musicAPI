@@ -27,6 +27,19 @@ test("quality fallback and cache defaults are enabled", async () => {
   assert.ok(config.defaults.urlCacheTtlMs >= 60000);
 });
 
+test("Kuwo and Migu cross-platform fallback is configured", async () => {
+  const config = await readJson("config/providers.json");
+  assert.equal(config.crossFallback.enabled, true);
+  assert.deepEqual(config.crossFallback.platforms.map((x) => x.id), ["kw", "mg"]);
+  const lingchuan = config.providers.find((p) => p.id === "lingchuan-public");
+  const xinlan = config.providers.find((p) => p.id === "xinlan-public");
+  const ikun = config.providers.find((p) => p.id === "ikun-public");
+  assert.deepEqual(lingchuan.crossPlatforms, ["kw", "mg"]);
+  assert.deepEqual(xinlan.crossPlatforms, ["kw", "mg"]);
+  assert.deepEqual(ikun.crossPlatforms, ["kw"]);
+  assert.ok(config.crossFallback.reserveMs >= 4000);
+});
+
 test("latency buckets", () => {
   assert.equal(bucketLatency(100), "fast");
   assert.equal(bucketLatency(900), "normal");

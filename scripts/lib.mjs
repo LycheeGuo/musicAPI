@@ -19,21 +19,28 @@ export function validateProviderConfig(config) {
   const errors = [];
   const warnings = [];
   const qualityNames = ["lq", "sq", "hq", "lossless", "hi-res"];
+  const splayerPlatforms = ["wy", "tx", "kg"];
+  const crossPlatforms = ["kw", "mg"];
 
   if (!config || typeof config !== "object") errors.push("config 必须是对象");
   if (config?.schemaVersion !== 1) errors.push("schemaVersion 必须为 1");
   if (!Array.isArray(config?.providers)) errors.push("providers 必须是数组");
 
   const ids = new Set();
+  const providersById = new Map();
   for (const [index, p] of (config?.providers || []).entries()) {
     const prefix = `providers[${index}]`;
     if (!p?.id || !/^[a-z0-9][a-z0-9._-]+$/.test(p.id)) errors.push(`${prefix}.id 不合法`);
     if (ids.has(p?.id)) errors.push(`${prefix}.id 重复: ${p?.id}`);
     ids.add(p?.id);
+    providersById.set(p?.id, p);
     if (typeof p?.enabled !== "boolean") errors.push(`${prefix}.enabled 必须为 boolean`);
     if (!Number.isFinite(p?.priority)) errors.push(`${prefix}.priority 必须为数字`);
-    if (!Array.isArray(p?.platforms) || !p.platforms.every((x) => ["wy", "tx", "kg"].includes(x))) {
+    if (!Array.isArray(p?.platforms) || !p.platforms.every((x) => splayerPlatforms.includes(x))) {
       errors.push(`${prefix}.platforms 只能包含 wy/tx/kg`);
+    }
+    if (p?.crossPlatforms !== undefined && (!Array.isArray(p.crossPlatforms) || !p.crossPlatforms.every((x) => crossPlatforms.includes(x)))) {
+      errors.push(`${prefix}.crossPlatforms 只能包含 kw/mg`);
     }
     if (p?.qualities !== undefined && (!Array.isArray(p.qualities) || !p.qualities.length || !p.qualities.every((x) => qualityNames.includes(x)))) {
       errors.push(`${prefix}.qualities 只能包含 lq/sq/hq/lossless/hi-res`);
@@ -57,6 +64,54 @@ export function validateProviderConfig(config) {
       }
     }
   }
+
+  const cross = config?.crossFallback;
+  if (cross !== undefined) {
+    if (!cross || typeof cross !== "object") {
+      errors.push("crossFallback 必须是对象");
+    } else {
+      if (typeof cross.enabled !== "boolean") errors.push("crossFallback.enabled 必须为 boolean");
+      if (cross.enabled && (!Array.isArray(cross.platforms) || !cross.platforms.length)) {
+        errors.push("crossFallback.platforms 必须是非空数组");
+      }
+      const seenCross = new Set();
+      for (const [index, platform] of (cross.platforms || []).entries()) {
+        const prefix = `crossFallback.platforms[${index}]`;
+        if (!crossPlatforms.includes(platform?.id)) errors.push(`${prefix}.id 只能是 kw/mg`);
+        if (seenCross.has(platform?.id)) errors.push(`${prefix}.id 重复: ${platform?.id}`);
+        seenCross.add(platform?.id);
+        if (!Number.isFinite(platform?.priority)) errors.push(`${prefix}.priority 必须为数字`);
+        if (!Array.isArray(platform?.resolverProviderIds) || !platform.resolverProviderIds.length) {
+          errors.push(`${prefix}.resolverProviderIds 必须是非空数组`);
+        } else {
+          for (const providerId of platform.resolverProviderIds) {
+            const provider = providersById.get(providerId);
+            if (!provider) {
+              errors.push(`${prefix}.resolverProviderIds 引用了不存在的 Provider: ${providerId}`);
+            } else if (!Array.isArray(provider.crossPlatforms) || !provider.crossPlatforms.includes(platform.id)) {
+              errors.push(`${prefix}: Provider ${providerId} 未声明 crossPlatforms 包含 ${platform.id}`);
+            }
+          }
+        }
+        const search = platform?.search;
+        if (!search || !["GET", "POST"].includes(String(search?.method || "GET").toUpperCase())) {
+          errors.push(`${prefix}.search.method 只支持 GET/POST`);
+        }
+        if (!/^https?:\/\//.test(String(search?.url || ""))) errors.push(`${prefix}.search.url 必须是 http/https`);
+        if (!["json", "text"].includes(search?.responseType || "json")) errors.push(`${prefix}.search.responseType 只支持 json/text`);
+        if (!search?.listPath) errors.push(`${prefix}.search.listPath 必填`);
+        if (!search?.fields?.idPath || !search?.fields?.namePath || !search?.fields?.singerPath) {
+          errors.push(`${prefix}.search.fields 至少需要 idPath/namePath/singerPath`);
+        }
+        for (const [k, v] of Object.entries(search?.headers || {})) {
+          if (/authorization|cookie|x-api-key|x-request-key|token|secret/i.test(k) && String(v || "").trim()) {
+            errors.push(`${prefix}.search.headers.${k} 不得包含秘密或访问凭据`);
+          }
+        }
+      }
+    }
+  }
+
   return { errors, warnings };
 }
 

@@ -2,7 +2,7 @@
  * @name        Unified Music Source
  * @id          local.unified-music-source
  * @version     __PLUGIN_VERSION__
- * @description 高音质优先、多音源聚合、自动降级、智能回退
+ * @description 高音质优先、多音源聚合、自动降级、酷我/咪咕跨平台兜底
  * @author      __AUTHOR__
  * @homepage    __HOMEPAGE__
  * @type        source
@@ -350,6 +350,249 @@ function putCached(key, result, defaults) {
   if (expiresAt > now + 5000) urlCache.set(key, { result, expiresAt });
 }
 
+function htmlDecodeLite(value) {
+  return String(value || "")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function normalizeMatchText(value) {
+  return htmlDecodeLite(value)
+    .replace(/<[^>]*>/g, "")
+    .toLowerCase()
+    .replace(/[\s\-—_·•()（）\[\]【】{}'"‘’“”，,。.！!？?：:；;\/\\]+/g, "");
+}
+
+function bigramSimilarity(a, b) {
+  const x = normalizeMatchText(a);
+  const y = normalizeMatchText(b);
+  if (!x || !y) return 0;
+  if (x === y) return 1;
+  if (x.includes(y) || y.includes(x)) return 0.88;
+  if (x.length < 2 || y.length < 2) return x === y ? 1 : 0;
+  const counts = new Map();
+  for (let i = 0; i < x.length - 1; i++) {
+    const gram = x.slice(i, i + 2);
+    counts.set(gram, (counts.get(gram) || 0) + 1);
+  }
+  let hits = 0;
+  for (let i = 0; i < y.length - 1; i++) {
+    const gram = y.slice(i, i + 2);
+    const n = counts.get(gram) || 0;
+    if (n > 0) {
+      hits += 1;
+      counts.set(gram, n - 1);
+    }
+  }
+  return (2 * hits) / ((x.length - 1) + (y.length - 1));
+}
+
+function singerSimilarity(target, candidate) {
+  const split = (value) => String(value || "").split(/[\/,，、&;；]+/).map(normalizeMatchText).filter(Boolean);
+  const a = split(target);
+  const b = split(candidate);
+  if (!a.length || !b.length) return 0;
+  let best = 0;
+  for (const x of a) {
+    for (const y of b) best = Math.max(best, bigramSimilarity(x, y));
+  }
+  return best;
+}
+
+function durationSeconds(value) {
+  if (value == null || value === "") return 0;
+  const text = String(value).trim();
+  if (/^\d{1,3}:\d{1,2}$/.test(text)) {
+    const [m, s] = text.split(":").map(Number);
+    return m * 60 + s;
+  }
+  const n = Number(text);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return n > 10000 ? Math.round(n / 1000) : Math.round(n);
+}
+
+function versionPenalty(targetName, candidateName) {
+  const target = normalizeMatchText(targetName);
+  const candidateRaw = String(candidateName || "").toLowerCase();
+  const markers = ["live", "现场", "翻唱", "cover", "伴奏", "remix", "dj", "纯音乐", "instrumental"];
+  let penalty = 0;
+  for (const marker of markers) {
+    if (candidateRaw.includes(marker) && !target.includes(normalizeMatchText(marker))) penalty += 14;
+  }
+  return Math.min(28, penalty);
+}
+
+function candidateScore(req, candidate) {
+  const m = req.musicInfo || {};
+  const titleSim = bigramSimilarity(m.name, candidate.name);
+  if (titleSim < 0.52) return -Infinity;
+  const singerSim = singerSimilarity(m.singer, candidate.singer);
+  if (String(m.singer || "").trim() && singerSim < 0.3) return -Infinity;
+
+  let score = titleSim * 55 + singerSim * 28;
+  const targetDuration = durationSeconds(m.interval || m.duration);
+  const candidateDuration = durationSeconds(candidate.duration);
+  if (targetDuration && candidateDuration) {
+    const diff = Math.abs(targetDuration - candidateDuration);
+    if (diff > 20) return -Infinity;
+    if (diff <= 3) score += 17;
+    else if (diff <= 8) score += 12;
+    else score += 6;
+  }
+  score -= versionPenalty(m.name, candidate.name);
+  return Math.round(score);
+}
+
+function normalizeHttpUrl(value, baseUrl) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (/^https?:\/\//i.test(text)) return text;
+  if (text.startsWith("//")) return `https:${text}`;
+  if (text.startsWith("/") && /^https?:\/\//i.test(String(baseUrl || ""))) {
+    return String(baseUrl).replace(/\/$/, "") + text;
+  }
+  return "";
+}
+
+function parseCrossCandidates(body, platform, limit) {
+  const search = platform.search || {};
+  const fields = search.fields || {};
+  const list = getPath(body, search.listPath);
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const item of list.slice(0, limit)) {
+    let id = String(getPath(item, fields.idPath) ?? "").trim();
+    const stripPrefix = String(fields.idStripPrefix || "");
+    if (stripPrefix && id.startsWith(stripPrefix)) id = id.slice(stripPrefix.length);
+    const alternateId = String(getPath(item, fields.alternateIdPath) ?? "").trim();
+    const name = htmlDecodeLite(getPath(item, fields.namePath));
+    const singer = htmlDecodeLite(getPath(item, fields.singerPath));
+    const duration = getPath(item, fields.durationPath);
+    if (!id || !name) continue;
+    let directUrl = "";
+    for (const path of fields.directUrlPaths || []) {
+      directUrl = normalizeHttpUrl(getPath(item, path), platform.directBaseUrl);
+      if (directUrl) break;
+    }
+    out.push({ id, alternateId, name, singer, duration, directUrl });
+  }
+  return out;
+}
+
+async function searchCrossPlatform(platform, req, timeoutMs, maxCandidates) {
+  const search = platform.search || {};
+  const m = req.musicInfo || {};
+  const keyword = `${String(m.name || "").trim()} ${String(m.singer || "").trim()}`.trim();
+  if (!keyword) return [];
+  const ctx = {
+    keyword,
+    name: String(m.name || ""),
+    singer: String(m.singer || ""),
+    duration: String(m.interval || m.duration || ""),
+  };
+  const method = String(search.method || "GET").toUpperCase();
+  const url = renderUrlString(search.url, ctx);
+  const headers = renderRawValue(search.headers || {}, ctx);
+  const options = { method, headers, responseType: search.responseType || "json", timeout: timeoutMs };
+  const resp = await splayer.request(url, options);
+  if (resp.status < 200 || resp.status >= 300) throw new Error(`HTTP ${resp.status}`);
+  const body = normalizeBody(resp.body);
+  return parseCrossCandidates(body, platform, maxCandidates)
+    .map((candidate) => ({ ...candidate, score: candidateScore(req, candidate), platform }))
+    .filter((candidate) => Number.isFinite(candidate.score));
+}
+
+function syntheticCrossReq(req, source, id) {
+  const musicInfo = { ...(req.musicInfo || {}) };
+  musicInfo.id = id;
+  musicInfo.songmid = id;
+  musicInfo.songId = id;
+  musicInfo.hash = id;
+  musicInfo.source = source;
+  return { source, quality: req.quality, musicInfo };
+}
+
+function providerById(config, id) {
+  return (config.providers || []).find((provider) => provider.id === id && provider.enabled);
+}
+
+async function resolveCrossFallback(req, config, defaults, started, budget, errors) {
+  const cross = config.crossFallback;
+  if (!cross?.enabled || !Array.isArray(cross.platforms) || !cross.platforms.length) return null;
+  const name = String(req.musicInfo?.name || "").trim();
+  if (!name) return null;
+
+  let remaining = budget - (Date.now() - started);
+  if (remaining <= 1500) return null;
+  const searchTimeout = Math.max(700, Math.min(Number(cross.searchTimeoutMs || 2200), remaining - 900));
+  const maxCandidates = Math.max(1, Math.min(12, Number(cross.maxCandidatesPerPlatform || 6)));
+  const minScore = Math.max(50, Math.min(100, Number(cross.minScore || 70)));
+  const platforms = [...cross.platforms].sort((a, b) => Number(a.priority || 100) - Number(b.priority || 100));
+
+  const settled = await Promise.allSettled(platforms.map(async (platform) => ({
+    platform,
+    candidates: await searchCrossPlatform(platform, req, searchTimeout, maxCandidates),
+  })));
+
+  const candidates = [];
+  for (const result of settled) {
+    if (result.status === "fulfilled") {
+      for (const candidate of result.value.candidates) {
+        if (candidate.score >= minScore) candidates.push(candidate);
+      }
+    } else {
+      errors.push(`cross-search: ${String(result.reason?.message || result.reason)}`);
+    }
+  }
+
+  candidates.sort((a, b) => b.score - a.score || Number(a.platform.priority || 100) - Number(b.platform.priority || 100));
+  if (!candidates.length) return null;
+
+  let directBackup = null;
+  const maxCrossQualityAttempts = Math.max(1, Math.min(3, Number(cross.maxQualityAttemptsPerProvider || 2)));
+
+  for (const candidate of candidates.slice(0, 4)) {
+    const platform = candidate.platform;
+    if (platform.allowDirectUrl && candidate.directUrl && !directBackup) {
+      directBackup = { url: candidate.directUrl, quality: "lq", crossSource: platform.id, score: candidate.score };
+    }
+
+    const ids = [candidate.id, candidate.alternateId].filter((id, index, arr) => id && arr.indexOf(id) === index);
+    for (const providerId of platform.resolverProviderIds || []) {
+      const provider = providerById(config, providerId);
+      if (!provider || !Array.isArray(provider.crossPlatforms) || !provider.crossPlatforms.includes(platform.id)) continue;
+      const qualities = qualityCandidates(String(req.quality || "lq"), provider, defaults).slice(0, maxCrossQualityAttempts);
+      if (!qualities.length) continue;
+
+      for (const id of ids) {
+        for (const qualityKey of qualities) {
+          remaining = budget - (Date.now() - started);
+          if (remaining <= 900) return directBackup;
+          const timeout = Math.max(650, Math.min(Number(defaults.providerTimeoutMs || 2800), remaining - 400));
+          const crossReq = syntheticCrossReq(req, platform.id, id);
+          const attemptStarted = Date.now();
+          try {
+            const result = await callProvider(provider, crossReq, qualityKey, timeout);
+            recordSuccess(provider.id);
+            recordProviderStat(platform.id, provider.id, true, Date.now() - attemptStarted);
+            log("info", `cross fallback success platform=${platform.id} provider=${provider.id} score=${candidate.score} quality=${qualityKey}`);
+            return { ...result, crossSource: platform.id, matchScore: candidate.score };
+          } catch (e) {
+            recordProviderStat(platform.id, provider.id, false, Date.now() - attemptStarted);
+            errors.push(`cross-${platform.id}/${provider.id}/${qualityKey}: ${String(e?.message || e)}`);
+            if (isTimeoutError(e)) break;
+          }
+        }
+      }
+    }
+  }
+
+  return directBackup;
+}
+
 async function resolveMusicUrl(req) {
   const started = Date.now();
   const embeddedDefaults = EMBEDDED_CONFIG.defaults || {};
@@ -363,6 +606,10 @@ async function resolveMusicUrl(req) {
   const maxProviders = Math.max(1, Math.min(8, Number(defaults.maxAttempts || 6)));
   const maxQualityAttempts = Math.max(1, Math.min(4, Number(defaults.maxQualityAttemptsPerProvider || 3)));
   const errors = [];
+  const crossEnabled = !!config.crossFallback?.enabled && !!String(req.musicInfo?.name || "").trim();
+  const crossReserve = crossEnabled
+    ? Math.max(3500, Math.min(8500, Number(config.crossFallback?.reserveMs || 6500)))
+    : 0;
 
   providerLoop:
   for (const provider of providers.slice(0, maxProviders)) {
@@ -372,8 +619,8 @@ async function resolveMusicUrl(req) {
 
     for (const qualityKey of qualities) {
       const remaining = budget - (Date.now() - started);
-      if (remaining <= 1400) break providerLoop;
-      const timeout = Math.max(800, Math.min(perRequest, remaining - 600));
+      if (remaining <= crossReserve + 700) break providerLoop;
+      const timeout = Math.max(800, Math.min(perRequest, remaining - crossReserve - 500));
       const attemptStarted = Date.now();
 
       try {
@@ -394,6 +641,11 @@ async function resolveMusicUrl(req) {
 
     recordFailure(provider.id, defaults);
     recordProviderStat(req.source, provider.id, false, Date.now() - providerStarted);
+  }
+
+  if (crossEnabled) {
+    const crossResult = await resolveCrossFallback(req, config, defaults, started, budget, errors);
+    if (crossResult?.url) return crossResult;
   }
 
   const err = new Error(`All providers failed (${errors.join(" | ") || "budget exceeded/no provider"})`);
