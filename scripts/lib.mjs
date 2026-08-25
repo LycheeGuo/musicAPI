@@ -18,6 +18,7 @@ export async function writeJsonIfChanged(path, value) {
 export function validateProviderConfig(config) {
   const errors = [];
   const warnings = [];
+  const qualityNames = ["lq", "sq", "hq", "lossless", "hi-res"];
 
   if (!config || typeof config !== "object") errors.push("config 必须是对象");
   if (config?.schemaVersion !== 1) errors.push("schemaVersion 必须为 1");
@@ -34,6 +35,10 @@ export function validateProviderConfig(config) {
     if (!Array.isArray(p?.platforms) || !p.platforms.every((x) => ["wy", "tx", "kg"].includes(x))) {
       errors.push(`${prefix}.platforms 只能包含 wy/tx/kg`);
     }
+    if (p?.qualities !== undefined && (!Array.isArray(p.qualities) || !p.qualities.length || !p.qualities.every((x) => qualityNames.includes(x)))) {
+      errors.push(`${prefix}.qualities 只能包含 lq/sq/hq/lossless/hi-res`);
+    }
+
     const t = p?.transport;
     if (!t || !["GET", "POST"].includes(String(t.method || "").toUpperCase())) {
       errors.push(`${prefix}.transport.method 只支持 GET/POST`);
