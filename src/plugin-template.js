@@ -3,7 +3,7 @@
  * @id          local.unified-music-source
  * @version     __PLUGIN_VERSION__
  * @description 多源聚合、自动回退、远程配置、健康降级
- * @author      repository-owner
+ * @author      __AUTHOR__
  * @homepage    __HOMEPAGE__
  * @type        source
  * @apiLevel    1
@@ -118,10 +118,13 @@ function songContext(req, provider) {
   const meta = isObject(m.meta) ? m.meta : {};
   const id = String(m.songmid || m.id || m.songId || "");
   const qualityMap = provider?.transport?.qualityMap || {};
+  const sourceMap = provider?.transport?.sourceMap || {};
+  const rawSource = String(req.source || m.source || "");
   const requested = String(req.quality || "lq");
   const mapped = String(qualityMap[requested] || requested);
   return {
-    source: String(req.source || m.source || ""),
+    source: String(sourceMap[rawSource] || rawSource),
+    rawSource,
     id,
     songmid: id,
     songId: id,
