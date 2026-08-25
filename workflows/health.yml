@@ -1,0 +1,28 @@
+name: Provider Health
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm run validate
+      - run: npm run health
+      - name: Commit runtime health if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config/runtime.json
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: update provider health [skip ci]"
+          git push
