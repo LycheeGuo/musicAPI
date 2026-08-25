@@ -19,6 +19,7 @@ const updateUrl = `https://raw.githubusercontent.com/${repo}/main/dist/splayer-s
 const configUrl = `https://raw.githubusercontent.com/${repo}/main/config/providers.json`;
 const runtimeUrl = `https://raw.githubusercontent.com/${repo}/main/config/runtime.json`;
 const homepage = `https://github.com/${repo}`;
+const author = repo.split("/")[0];
 const sha = String(process.env.GITHUB_SHA || "").slice(0, 7);
 const changelog = sha ? `自动构建 ${sha}` : "初始构建";
 
@@ -28,6 +29,7 @@ const values = {
   "__CONFIG_URL__": configUrl,
   "__RUNTIME_URL__": runtimeUrl,
   "__HOMEPAGE__": homepage,
+  "__AUTHOR__": author,
   "__REPOSITORY__": repo,
   "__CHANGELOG__": changelog,
   "__EMBEDDED_CONFIG__": JSON.stringify(config)
