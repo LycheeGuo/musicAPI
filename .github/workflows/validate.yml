@@ -18,4 +18,9 @@ jobs:
         with:
           node-version: "22"
       - run: npm run validate
+      - run: npm run build
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          BUILD_VERSION: 1.0.0
+          GITHUB_SHA: ${{ github.sha }}
       - run: npm test
