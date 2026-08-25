@@ -1,5 +1,48 @@
 {
   "schemaVersion": 1,
-  "generation": 1,
-  "providers": {}
+  "generation": 2,
+  "providers": {
+    "xinghai-main": {
+      "state": "unknown",
+      "failureStreak": 0,
+      "successStreak": 0,
+      "latency": "unknown"
+    },
+    "huibq-share-v3": {
+      "state": "unknown",
+      "failureStreak": 0,
+      "successStreak": 0,
+      "latency": "unknown"
+    },
+    "juhe-direct": {
+      "state": "unknown",
+      "failureStreak": 0,
+      "successStreak": 0,
+      "latency": "unknown"
+    },
+    "lingchuan-public": {
+      "state": "unknown",
+      "failureStreak": 0,
+      "successStreak": 0,
+      "latency": "unknown"
+    },
+    "xinlan-public": {
+      "state": "unknown",
+      "failureStreak": 0,
+      "successStreak": 0,
+      "latency": "unknown"
+    },
+    "ikun-public": {
+      "state": "unknown",
+      "failureStreak": 0,
+      "successStreak": 0,
+      "latency": "unknown"
+    },
+    "example-authorized-api": {
+      "state": "unknown",
+      "failureStreak": 0,
+      "successStreak": 0,
+      "latency": "unknown"
+    }
+  }
 }
