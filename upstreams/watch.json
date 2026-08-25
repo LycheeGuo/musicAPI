@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "pdone-sixyin",
+      "repo": "pdone/lx-music-source",
+      "path": "sixyin/latest.js"
+    },
+    {
+      "id": "pdone-huibq",
+      "repo": "pdone/lx-music-source",
+      "path": "huibq/latest.js"
+    },
+    {
+      "id": "pdone-flower",
+      "repo": "pdone/lx-music-source",
+      "path": "flower/latest.js"
+    },
+    {
+      "id": "pdone-lx",
+      "repo": "pdone/lx-music-source",
+      "path": "lx/latest.js"
+    },
+    {
+      "id": "pdone-ikun",
+      "repo": "pdone/lx-music-source",
+      "path": "ikun/latest.js"
+    },
+    {
+      "id": "pdone-grass",
+      "repo": "pdone/lx-music-source",
+      "path": "grass/latest.js"
+    },
+    {
+      "id": "pdone-juhe",
+      "repo": "pdone/lx-music-source",
+      "path": "juhe/latest.js"
+    },
+    {
+      "id": "pdone-qdy",
+      "repo": "pdone/lx-music-source",
+      "path": "qdy/latest.js"
+    }
+  ]
+}

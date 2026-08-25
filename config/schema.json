@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SPlayer Aggregated Music Source Provider Config",
+  "type": "object",
+  "required": ["schemaVersion", "revision", "defaults", "providers"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "enabled", "priority", "platforms", "transport"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$" },
+          "enabled": { "type": "boolean" },
+          "priority": { "type": "number" },
+          "platforms": {
+            "type": "array",
+            "items": { "enum": ["wy", "tx", "kg"] }
+          }
+        }
+      }
+    }
+  }
+}
