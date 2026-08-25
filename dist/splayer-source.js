@@ -1,20 +1,20 @@
 /**
  * @name        Unified Music Source
  * @id          local.unified-music-source
- * @version     1.0.2
+ * @version     1.0.3
  * @description 多源聚合、自动回退、远程配置、健康降级
- * @author      repository-owner
+ * @author      LycheeGuo
  * @homepage    https://github.com/LycheeGuo/musicAPI
  * @type        source
  * @apiLevel    1
  * @updateUrl   https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/dist/splayer-source.js
- * @changelog   自动构建 9bd61a9
+ * @changelog   自动构建 7cc19f9
  */
 
 const CONFIG_URL = "https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/config/providers.json";
 const RUNTIME_URL = "https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/config/runtime.json";
 const REPOSITORY = "LycheeGuo/musicAPI";
-const EMBEDDED_CONFIG = {"schemaVersion":1,"revision":1,"defaults":{"configTtlMs":900000,"providerTimeoutMs":3500,"totalBudgetMs":18000,"maxAttempts":4,"circuitBreaker":{"failureThreshold":3,"cooldownMs":600000},"qualityFallback":["hi-res","lossless","hq","sq","lq"]},"providers":[{"id":"example-authorized-api","name":"Example Authorized API","enabled":false,"priority":100,"platforms":["wy","tx","kg"],"description":"示例模板。请替换为你有权使用的公开/自建/官方授权 API。","transport":{"method":"GET","url":"https://example.invalid/music/url?source={source}&id={id}&quality={quality}","responseType":"json","headers":{},"qualityMap":{"lq":"128k","sq":"192k","hq":"320k","lossless":"flac","hi-res":"hires"},"success":{"status":[200],"bodyPath":"code","equals":0},"result":{"urlPath":"url","expirePath":"expire","expireUnit":"ms"}},"healthcheck":{"enabled":false,"method":"GET","url":"https://example.invalid/health","expectedStatus":[200],"timeoutMs":5000}},{"id":"example-local-resolver","name":"Example Local Resolver","enabled":false,"priority":200,"platforms":["wy","tx","kg"],"description":"如果以后有自己的本地/局域网 resolver，可启用此模板。","transport":{"method":"GET","url":"http://127.0.0.1:9863/resolve?source={source}&id={id}&name={name}&singer={singer}&quality={quality}","responseType":"json","headers":{},"qualityMap":{"lq":"lq","sq":"sq","hq":"hq","lossless":"lossless","hi-res":"hi-res"},"success":{"status":[200]},"result":{"urlPath":"url","expirePath":"expire","expireUnit":"ms"}},"healthcheck":{"enabled":false,"method":"GET","url":"http://127.0.0.1:9863/health","expectedStatus":[200],"timeoutMs":3000}}]};
+const EMBEDDED_CONFIG = {"schemaVersion":1,"revision":2,"defaults":{"configTtlMs":900000,"providerTimeoutMs":4500,"totalBudgetMs":18000,"maxAttempts":4,"circuitBreaker":{"failureThreshold":3,"cooldownMs":600000},"qualityFallback":["hi-res","lossless","hq","sq","lq"]},"providers":[{"id":"xinghai-main","name":"Xinghai Main","enabled":true,"priority":10,"platforms":["wy","tx","kg"],"description":"公开 JSON API。返回体中的 url 作为播放地址。","transport":{"method":"GET","url":"https://music-api.gdstudio.xyz/api.php?use_xbridge3=true&loader_name=forest&need_sec_link=1&sec_link_scene=im&theme=light&types=url&source={source}&id={id}&br={quality}","responseType":"json","headers":{"User-Agent":"LX-Music-Mobile","Accept":"application/json"},"sourceMap":{"wy":"netease","tx":"tencent","kg":"kugou"},"qualityMap":{"lq":"128","sq":"192","hq":"320","lossless":"740","hi-res":"999"},"success":{"status":[200]},"result":{"urlPath":"url"}},"healthcheck":{"enabled":false}},{"id":"huibq-share-v3","name":"Huibq Share v3","enabled":true,"priority":20,"publicCredential":true,"platforms":["wy","tx","kg"],"description":"Huibq 公开分享接口，使用其公开 share-v3 请求值。","transport":{"method":"GET","url":"https://lxmusicapi.onrender.com/url/{source}/{id}/{quality}","responseType":"json","headers":{"Content-Type":"application/json","X-Request-Key":"share-v3"},"qualityMap":{"lq":"128k","sq":"128k","hq":"320k","lossless":"320k","hi-res":"320k"},"success":{"status":[200],"bodyPath":"code","equals":0},"result":{"urlPath":"url"}},"healthcheck":{"enabled":false}},{"id":"example-authorized-api","name":"Example Authorized API","enabled":false,"priority":900,"platforms":["wy","tx","kg"],"description":"保留的自建/官方授权 API 模板。","transport":{"method":"GET","url":"https://example.invalid/music/url?source={source}&id={id}&quality={quality}","responseType":"json","headers":{},"qualityMap":{"lq":"128k","sq":"192k","hq":"320k","lossless":"flac","hi-res":"hires"},"success":{"status":[200],"bodyPath":"code","equals":0},"result":{"urlPath":"url","expirePath":"expire","expireUnit":"ms"}},"healthcheck":{"enabled":false,"method":"GET","url":"https://example.invalid/health","expectedStatus":[200],"timeoutMs":5000}}]};
 
 const SUPPORTED_SOURCES = ["wy", "tx", "kg"];
 const SUPPORTED_QUALITIES = ["lq", "sq", "hq", "lossless", "hi-res"];
@@ -118,10 +118,13 @@ function songContext(req, provider) {
   const meta = isObject(m.meta) ? m.meta : {};
   const id = String(m.songmid || m.id || m.songId || "");
   const qualityMap = provider?.transport?.qualityMap || {};
+  const sourceMap = provider?.transport?.sourceMap || {};
+  const rawSource = String(req.source || m.source || "");
   const requested = String(req.quality || "lq");
   const mapped = String(qualityMap[requested] || requested);
   return {
-    source: String(req.source || m.source || ""),
+    source: String(sourceMap[rawSource] || rawSource),
+    rawSource,
     id,
     songmid: id,
     songId: id,
