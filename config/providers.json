@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "revision": 4,
+  "revision": 5,
   "defaults": {
     "configTtlMs": 900000,
-    "providerTimeoutMs": 3500,
+    "providerTimeoutMs": 3200,
     "totalBudgetMs": 19000,
     "maxAttempts": 4,
     "circuitBreaker": {
@@ -18,26 +18,14 @@
       "lq"
     ]
   },
-  "youtubeFallback": {
-    "enabled": false,
-    "maxInstances": 0,
-    "searchLimit": 8,
-    "minScore": 45,
-    "durationToleranceSec": 35,
-    "instances": []
-  },
   "providers": [
     {
       "id": "xinghai-main",
       "name": "Xinghai Main",
       "enabled": true,
       "priority": 10,
-      "platforms": [
-        "wy",
-        "tx",
-        "kg"
-      ],
-      "description": "公开 JSON API。返回体中的 url 作为播放地址。",
+      "platforms": ["wy", "tx", "kg"],
+      "description": "公开 JSON API，优先尝试。",
       "transport": {
         "method": "GET",
         "url": "https://music-api.gdstudio.xyz/api.php?use_xbridge3=true&loader_name=forest&need_sec_link=1&sec_link_scene=im&theme=light&types=url&source={source}&id={id}&br={quality}",
@@ -58,18 +46,10 @@
           "lossless": "740",
           "hi-res": "999"
         },
-        "success": {
-          "status": [
-            200
-          ]
-        },
-        "result": {
-          "urlPath": "url"
-        }
+        "success": { "status": [200] },
+        "result": { "urlPath": "url" }
       },
-      "healthcheck": {
-        "enabled": false
-      }
+      "healthcheck": { "enabled": false }
     },
     {
       "id": "huibq-share-v3",
@@ -77,12 +57,8 @@
       "enabled": true,
       "priority": 20,
       "publicCredential": true,
-      "platforms": [
-        "wy",
-        "tx",
-        "kg"
-      ],
-      "description": "Huibq 公开分享接口，使用其公开 share-v3 请求值。",
+      "platforms": ["wy", "tx", "kg"],
+      "description": "Huibq 公开分享接口。",
       "transport": {
         "method": "GET",
         "url": "https://lxmusicapi.onrender.com/url/{source}/{id}/{quality}",
@@ -99,77 +75,83 @@
           "hi-res": "320k"
         },
         "success": {
-          "status": [
-            200
-          ],
+          "status": [200],
           "bodyPath": "code",
           "equals": 0
         },
-        "result": {
-          "urlPath": "url"
-        }
+        "result": { "urlPath": "url" }
       },
-      "healthcheck": {
-        "enabled": false
-      }
+      "healthcheck": { "enabled": false }
     },
     {
-      "id": "koyeb-youtube-cloud",
-      "name": "Koyeb YouTube Cloud",
-      "enabled": false,
+      "id": "juhe-direct",
+      "name": "Juhe Direct",
+      "enabled": true,
       "priority": 30,
-      "platforms": [
-        "wy",
-        "tx",
-        "kg"
-      ],
-      "description": "部署 resolver/ 到 Koyeb 后，将 YOUR_KOYEB_APP 替换为实际应用域名并启用。仅处理公开可播放 YouTube 内容。",
+      "platforms": ["wy", "tx", "kg"],
+      "description": "聚合 API 的直接 URL 返回模式；仅接受 code=200，不执行服务端下发的二次任意请求。",
+      "transport": {
+        "method": "POST",
+        "url": "https://api.music.lerd.dpdns.org/{source}",
+        "responseType": "json",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        "bodyMode": "lx-music-url",
+        "qualityMap": {
+          "lq": "128k",
+          "sq": "128k",
+          "hq": "320k",
+          "lossless": "flac",
+          "hi-res": "flac"
+        },
+        "success": {
+          "status": [200],
+          "bodyPath": "code",
+          "equals": 200
+        },
+        "result": { "urlPath": "data.url" }
+      },
+      "healthcheck": { "enabled": false }
+    },
+    {
+      "id": "ikun-public",
+      "name": "iKun Public",
+      "enabled": true,
+      "priority": 40,
+      "platforms": ["wy"],
+      "description": "iKun 当前公开接口；在 SPlayer 支持的平台中仅用于网易源。",
       "transport": {
         "method": "GET",
-        "url": "https://YOUR_KOYEB_APP.koyeb.app/resolve?name={name}&singer={singer}&duration={duration}&quality={requestedQuality}",
+        "url": "https://api.ikunshare.com/url?source={source}&songId={id}&quality={quality}",
         "responseType": "json",
         "headers": {
           "Accept": "application/json"
         },
         "qualityMap": {
-          "lq": "lq",
-          "sq": "sq",
-          "hq": "hq",
-          "lossless": "lossless",
-          "hi-res": "hi-res"
+          "lq": "128k",
+          "sq": "128k",
+          "hq": "320k",
+          "lossless": "flac",
+          "hi-res": "hires"
         },
         "success": {
-          "status": [
-            200
-          ],
+          "status": [200],
           "bodyPath": "code",
-          "equals": 0
+          "equals": 200
         },
-        "result": {
-          "urlPath": "url"
-        }
+        "result": { "urlPath": "url" }
       },
-      "healthcheck": {
-        "enabled": false,
-        "method": "GET",
-        "url": "https://YOUR_KOYEB_APP.koyeb.app/health",
-        "expectedStatus": [
-          200
-        ],
-        "timeoutMs": 5000
-      }
+      "healthcheck": { "enabled": false }
     },
     {
       "id": "example-authorized-api",
       "name": "Example Authorized API",
       "enabled": false,
       "priority": 900,
-      "platforms": [
-        "wy",
-        "tx",
-        "kg"
-      ],
-      "description": "保留的自建/官方授权 API 模板。",
+      "platforms": ["wy", "tx", "kg"],
+      "description": "保留的自建或官方授权 API 模板。",
       "transport": {
         "method": "GET",
         "url": "https://example.invalid/music/url?source={source}&id={id}&quality={quality}",
@@ -183,9 +165,7 @@
           "hi-res": "hires"
         },
         "success": {
-          "status": [
-            200
-          ],
+          "status": [200],
           "bodyPath": "code",
           "equals": 0
         },
@@ -199,9 +179,7 @@
         "enabled": false,
         "method": "GET",
         "url": "https://example.invalid/health",
-        "expectedStatus": [
-          200
-        ],
+        "expectedStatus": [200],
         "timeoutMs": 5000
       }
     }
