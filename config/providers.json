@@ -1,11 +1,13 @@
 {
   "schemaVersion": 1,
-  "revision": 5,
+  "revision": 6,
   "defaults": {
     "configTtlMs": 900000,
-    "providerTimeoutMs": 3200,
+    "providerTimeoutMs": 2800,
     "totalBudgetMs": 19000,
-    "maxAttempts": 4,
+    "maxAttempts": 6,
+    "maxQualityAttemptsPerProvider": 3,
+    "urlCacheTtlMs": 300000,
     "circuitBreaker": {
       "failureThreshold": 3,
       "cooldownMs": 600000
@@ -25,7 +27,8 @@
       "enabled": true,
       "priority": 10,
       "platforms": ["wy", "tx", "kg"],
-      "description": "公开 JSON API，优先尝试。",
+      "qualities": ["hi-res", "lossless", "hq", "sq", "lq"],
+      "description": "公开 JSON API；优先尝试高质量，失败自动降级。",
       "transport": {
         "method": "GET",
         "url": "https://music-api.gdstudio.xyz/api.php?use_xbridge3=true&loader_name=forest&need_sec_link=1&sec_link_scene=im&theme=light&types=url&source={source}&id={id}&br={quality}",
@@ -58,7 +61,8 @@
       "priority": 20,
       "publicCredential": true,
       "platforms": ["wy", "tx", "kg"],
-      "description": "Huibq 公开分享接口。",
+      "qualities": ["hq", "lq"],
+      "description": "Huibq 公开分享接口；最高按 320k 使用。",
       "transport": {
         "method": "GET",
         "url": "https://lxmusicapi.onrender.com/url/{source}/{id}/{quality}",
@@ -89,7 +93,8 @@
       "enabled": true,
       "priority": 30,
       "platforms": ["wy", "tx", "kg"],
-      "description": "聚合 API 的直接 URL 返回模式；仅接受 code=200，不执行服务端下发的二次任意请求。",
+      "qualities": ["lossless", "hq", "lq"],
+      "description": "聚合 API 直接 URL 模式；不执行服务端下发的二次任意请求。",
       "transport": {
         "method": "POST",
         "url": "https://api.music.lerd.dpdns.org/{source}",
@@ -116,12 +121,77 @@
       "healthcheck": { "enabled": false }
     },
     {
+      "id": "lingchuan-public",
+      "name": "Lingchuan Public",
+      "enabled": true,
+      "priority": 40,
+      "platforms": ["wy", "tx", "kg"],
+      "qualities": ["lossless", "hq", "lq"],
+      "description": "聆川公益公开接口；声明支持 FLAC / 320k / 128k。",
+      "transport": {
+        "method": "GET",
+        "url": "https://lc.guoyue2010.top/api/music/url?source={source}&songId={id}&quality={quality}",
+        "responseType": "json",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        "qualityMap": {
+          "lq": "128k",
+          "sq": "128k",
+          "hq": "320k",
+          "lossless": "flac",
+          "hi-res": "flac"
+        },
+        "success": {
+          "status": [200],
+          "bodyPath": "code",
+          "equals": 200
+        },
+        "result": { "urlPath": "url" }
+      },
+      "healthcheck": { "enabled": false }
+    },
+    {
+      "id": "xinlan-public",
+      "name": "Xinlan Public",
+      "enabled": true,
+      "priority": 50,
+      "platforms": ["wy", "tx", "kg"],
+      "qualities": ["hq", "lq"],
+      "description": "新澜公益公开接口；声明支持 320k / 128k。",
+      "transport": {
+        "method": "GET",
+        "url": "https://source.shiqianjiang.cn/api/music/url?source={source}&songId={id}&quality={quality}",
+        "responseType": "json",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        "qualityMap": {
+          "lq": "128k",
+          "sq": "128k",
+          "hq": "320k",
+          "lossless": "320k",
+          "hi-res": "320k"
+        },
+        "success": {
+          "status": [200],
+          "bodyPath": "code",
+          "equals": 200
+        },
+        "result": { "urlPath": "url" }
+      },
+      "healthcheck": { "enabled": false }
+    },
+    {
       "id": "ikun-public",
       "name": "iKun Public",
       "enabled": true,
-      "priority": 40,
+      "priority": 60,
       "platforms": ["wy"],
-      "description": "iKun 当前公开接口；在 SPlayer 支持的平台中仅用于网易源。",
+      "qualities": ["hi-res", "lossless", "hq", "lq"],
+      "description": "iKun 当前公开接口；SPlayer 中作为网易额外兜底。",
       "transport": {
         "method": "GET",
         "url": "https://api.ikunshare.com/url?source={source}&songId={id}&quality={quality}",
@@ -151,6 +221,7 @@
       "enabled": false,
       "priority": 900,
       "platforms": ["wy", "tx", "kg"],
+      "qualities": ["hi-res", "lossless", "hq", "sq", "lq"],
       "description": "保留的自建或官方授权 API 模板。",
       "transport": {
         "method": "GET",
