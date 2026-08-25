@@ -1,76 +1,74 @@
-# Unified Music Source — SPlayer + LX Music
+# Unified Music Source — SPlayer
 
-一个“单仓库、多 Provider、双播放器 Adapter”的音源聚合框架。
+一个面向 SPlayer-Next 的“单插件、多 Provider、高质量优先、自动回退”音源聚合框架。
 
-> 默认不内置绕过 VIP、付费墙、登录或访问控制的接口。请只配置你有权使用的公开、自建或官方授权 API。
+> 默认不内置绕过 VIP、付费墙、登录或访问控制的接口。只接入公开、自建或明确授权的 API；不自动执行未知/混淆远端脚本。
 
-## 生成两个播放器版本
-
-```text
-dist/splayer-source.js   # SPlayer-Next
-dist/lx-source.js        # LX Music
-```
-
-两个文件共用同一个：
-
-```text
-config/providers.json
-```
-
-所以新增、删除或调整 Provider 优先级时，只改一份配置，GitHub Actions 会同时构建两个播放器版本。
-
-## 当前聚合音源
-
-按优先级自动回退：
-
-1. `Xinghai Main` — `wy / tx / kg`
-2. `Huibq Share v3` — `wy / tx / kg`
-3. `Juhe Direct` — `wy / tx / kg`，仅接受直接返回播放 URL 的模式
-4. `iKun Public` — `wy`
-
-因此网易最多有 4 路回退，QQ/酷狗最多有 3 路回退。
-
-六音、QDY、Flower、LX、Grass 等上游仍可由 watcher 观察版本变化，但不会自动执行或复制未知/混淆脚本，也不会自动接入需要登录 Cookie、会员/SVIP 或其他访问控制的链路。
-
-## SPlayer 版
-
-安装：
+## 只需要一个文件
 
 ```text
 dist/splayer-source.js
 ```
 
-SPlayer Adapter 使用 `splayer.register / splayer.on / splayer.request`，并支持远程 `providers.json`、熔断、健康降级和 `@updateUrl`。
+插件注册 SPlayer 当前播放链使用的：
 
-## LX Music 版
+- `wy` — 网易
+- `tx` — QQ
+- `kg` — 酷狗
 
-导入：
+## 当前启用的 Provider
+
+按基础优先级排列，运行时会结合成功率、延迟、熔断和健康状态动态调整：
+
+1. `Xinghai Main` — `wy / tx / kg`
+2. `Huibq Share v3` — `wy / tx / kg`
+3. `Juhe Direct` — `wy / tx / kg`
+4. `Lingchuan Public` — `wy / tx / kg`
+5. `Xinlan Public` — `wy / tx / kg`
+6. `iKun Public` — `wy`
+
+因此：
+
+- 网易最多有 6 路 Provider
+- QQ 最多有 5 路 Provider
+- 酷狗最多有 5 路 Provider
+
+## 音质策略
+
+目标不是“必须无损”，而是“在有限时间内尽可能拿到当前可用的最高质量”。
+
+例如 SPlayer 请求无损：
 
 ```text
-dist/lx-source.js
+lossless
+  ↓ 当前 Provider 不支持/失败
+hq (通常 320k)
+  ↓ 失败
+sq
+  ↓ 失败
+lq
 ```
 
-LX Adapter 使用 `globalThis.lx / EVENT_NAMES.request / EVENT_NAMES.inited`，初始化时直接载入构建时嵌入的 Provider 配置；因此不会因为 GitHub 配置文件暂时不可达而初始化失败。
+每个 Provider 会按自己声明的能力跳过不支持或重复映射的音质，因此不会把同一个 320k 接口重复请求多次。
 
-LX 版也会检查 GitHub 上的 `dist/lx-source.js` 版本，并通过 `updateAlert` 提示更新。
+## v2 核心能力
 
-## 已经做好的能力
-
-- 多 Provider 自动回退
-- Provider 优先级
-- SPlayer 与 LX Music 双 Adapter
-- GitHub Actions 一次构建两个插件文件
-- Provider 配置统一维护
-- SPlayer 健康状态降级与客户端熔断
-- SPlayer 远程配置热更新
-- LX 初始化 smoke test
-- LX Provider 回退 smoke test
-- GitHub Actions Provider 健康检查
-- GitHub Actions 上游 SHA 观察
-- 不执行远端 JS
+- 6 路 Provider 自动回退
+- 高音质优先，失败自动降级
+- Provider 能力声明（不同源支持不同最高音质）
+- URL 短期缓存，重复播放减少解析请求
+- 同一首歌同时请求自动去重
+- 最近成功率与延迟参与 Provider 动态排序
+- 连续失败熔断与冷却
+- GitHub `runtime.json` 健康状态降级
+- 总解析时间预算，避免无限等待
+- 远程 `providers.json` 热更新
+- 构建时嵌入配置，GitHub 暂时不可达仍可工作
+- `@updateUrl` 原生 SPlayer 更新
+- GitHub Actions 自动构建和测试
+- 上游版本 SHA 观察
 - 不需要本地 Node 后台
 - 不需要云端 resolver
-- 构建零第三方 npm 依赖
 
 ## 仓库结构
 
@@ -86,14 +84,12 @@ LX 版也会检查 GitHub 上的 `dist/lx-source.js` 版本，并通过 `updateA
 │   ├── runtime.json
 │   └── schema.json
 ├── dist/
-│   ├── splayer-source.js
-│   └── lx-source.js
+│   └── splayer-source.js
 ├── docs/
 ├── scripts/
 │   └── build.mjs
 ├── src/
-│   ├── plugin-template.js
-│   └── lx-template.js
+│   └── plugin-template.js
 ├── tests/
 └── upstreams/
 ```
@@ -112,10 +108,9 @@ Build workflow 会重新生成：
 
 ```text
 dist/splayer-source.js
-dist/lx-source.js
 ```
 
-版本使用 GitHub Actions run number，例如 `1.0.23`。
+版本使用 GitHub Actions run number，例如 `1.0.23`。SPlayer 根据固定 `@updateUrl` 检查新版。
 
 ## 本地验证（可选）
 
@@ -127,4 +122,4 @@ npm run build
 npm test
 ```
 
-无 `npm install` 步骤，因为主构建链没有第三方 npm 依赖。
+主构建链没有第三方 npm 依赖。

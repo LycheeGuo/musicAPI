@@ -18,6 +18,11 @@
           "platforms": {
             "type": "array",
             "items": { "enum": ["wy", "tx", "kg"] }
+          },
+          "qualities": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "enum": ["lq", "sq", "hq", "lossless", "hi-res"] }
           }
         }
       }

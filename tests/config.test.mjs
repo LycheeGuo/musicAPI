@@ -8,14 +8,23 @@ test("providers.json validates", async () => {
   assert.deepEqual(result.errors, []);
 });
 
-test("multi-provider coverage", async () => {
+test("expanded SPlayer provider coverage", async () => {
   const config = await readJson("config/providers.json");
   const enabled = config.providers.filter((p) => p.enabled);
-  assert.equal(enabled.length, 4);
-  assert.ok(enabled.filter((p) => p.platforms.includes("wy")).length >= 4);
-  assert.ok(enabled.filter((p) => p.platforms.includes("tx")).length >= 3);
-  assert.ok(enabled.filter((p) => p.platforms.includes("kg")).length >= 3);
+  assert.equal(enabled.length, 6);
+  assert.ok(enabled.filter((p) => p.platforms.includes("wy")).length >= 6);
+  assert.ok(enabled.filter((p) => p.platforms.includes("tx")).length >= 5);
+  assert.ok(enabled.filter((p) => p.platforms.includes("kg")).length >= 5);
+  assert.ok(enabled.some((p) => p.qualities?.includes("lossless")));
+  assert.ok(enabled.some((p) => p.qualities?.includes("hq")));
   assert.ok(enabled.some((p) => p.transport?.bodyMode === "lx-music-url"));
+});
+
+test("quality fallback and cache defaults are enabled", async () => {
+  const config = await readJson("config/providers.json");
+  assert.deepEqual(config.defaults.qualityFallback, ["hi-res", "lossless", "hq", "sq", "lq"]);
+  assert.ok(config.defaults.maxQualityAttemptsPerProvider >= 2);
+  assert.ok(config.defaults.urlCacheTtlMs >= 60000);
 });
 
 test("latency buckets", () => {
