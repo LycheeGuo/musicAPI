@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "revision": 3,
+  "revision": 4,
   "defaults": {
-    "configTtlMs": 900000,
-    "providerTimeoutMs": 3500,
+    "configTtlMs": 300000,
+    "providerTimeoutMs": 4500,
     "totalBudgetMs": 19000,
     "maxAttempts": 4,
     "circuitBreaker": {
@@ -19,18 +19,12 @@
     ]
   },
   "youtubeFallback": {
-    "enabled": true,
-    "maxInstances": 3,
-    "searchLimit": 8,
+    "enabled": false,
+    "maxInstances": 0,
+    "searchLimit": 0,
     "minScore": 45,
     "durationToleranceSec": 35,
-    "instances": [
-      "https://pipedapi.kavin.rocks",
-      "https://pipedapi.leptons.xyz",
-      "https://piped-api.privacy.com.de",
-      "https://pipedapi.adminforge.de",
-      "https://api.piped.private.coffee"
-    ]
+    "instances": []
   },
   "providers": [
     {
@@ -38,11 +32,7 @@
       "name": "Xinghai Main",
       "enabled": true,
       "priority": 10,
-      "platforms": [
-        "wy",
-        "tx",
-        "kg"
-      ],
+      "platforms": ["wy", "tx", "kg"],
       "description": "公开 JSON API。返回体中的 url 作为播放地址。",
       "transport": {
         "method": "GET",
@@ -64,18 +54,10 @@
           "lossless": "740",
           "hi-res": "999"
         },
-        "success": {
-          "status": [
-            200
-          ]
-        },
-        "result": {
-          "urlPath": "url"
-        }
+        "success": { "status": [200] },
+        "result": { "urlPath": "url" }
       },
-      "healthcheck": {
-        "enabled": false
-      }
+      "healthcheck": { "enabled": false }
     },
     {
       "id": "huibq-share-v3",
@@ -83,11 +65,7 @@
       "enabled": true,
       "priority": 20,
       "publicCredential": true,
-      "platforms": [
-        "wy",
-        "tx",
-        "kg"
-      ],
+      "platforms": ["wy", "tx", "kg"],
       "description": "Huibq 公开分享接口，使用其公开 share-v3 请求值。",
       "transport": {
         "method": "GET",
@@ -105,30 +83,52 @@
           "hi-res": "320k"
         },
         "success": {
-          "status": [
-            200
-          ],
+          "status": [200],
           "bodyPath": "code",
           "equals": 0
         },
+        "result": { "urlPath": "url" }
+      },
+      "healthcheck": { "enabled": false }
+    },
+    {
+      "id": "local-youtube-mac",
+      "name": "Local YouTube (Mac)",
+      "enabled": true,
+      "priority": 30,
+      "platforms": ["wy", "tx", "kg"],
+      "description": "本机 127.0.0.1 YouTube.js 兜底。只在前两个 Provider 失败后调用。",
+      "transport": {
+        "method": "GET",
+        "url": "http://127.0.0.1:9863/resolve?name={name}&singer={singer}&duration={duration}",
+        "responseType": "json",
+        "headers": {},
+        "qualityMap": {
+          "lq": "lq",
+          "sq": "sq",
+          "hq": "hq",
+          "lossless": "lossless",
+          "hi-res": "hi-res"
+        },
+        "success": {
+          "status": [200],
+          "bodyPath": "ok",
+          "equals": true
+        },
         "result": {
-          "urlPath": "url"
+          "urlPath": "url",
+          "expirePath": "expire",
+          "expireUnit": "ms"
         }
       },
-      "healthcheck": {
-        "enabled": false
-      }
+      "healthcheck": { "enabled": false }
     },
     {
       "id": "example-authorized-api",
       "name": "Example Authorized API",
       "enabled": false,
       "priority": 900,
-      "platforms": [
-        "wy",
-        "tx",
-        "kg"
-      ],
+      "platforms": ["wy", "tx", "kg"],
       "description": "保留的自建/官方授权 API 模板。",
       "transport": {
         "method": "GET",
@@ -143,9 +143,7 @@
           "hi-res": "hires"
         },
         "success": {
-          "status": [
-            200
-          ],
+          "status": [200],
           "bodyPath": "code",
           "equals": 0
         },
@@ -159,9 +157,7 @@
         "enabled": false,
         "method": "GET",
         "url": "https://example.invalid/health",
-        "expectedStatus": [
-          200
-        ],
+        "expectedStatus": [200],
         "timeoutMs": 5000
       }
     }
