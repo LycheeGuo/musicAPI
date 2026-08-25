@@ -1,19 +1,19 @@
 /**
  * @name        Unified Music Source
  * @id          local.unified-music-source
- * @version     1.0.0
+ * @version     1.0.2
  * @description 多源聚合、自动回退、远程配置、健康降级
  * @author      repository-owner
- * @homepage    https://github.com/YOUR_GITHUB_USER/splayer-music-source
+ * @homepage    https://github.com/LycheeGuo/musicAPI
  * @type        source
  * @apiLevel    1
- * @updateUrl   https://raw.githubusercontent.com/YOUR_GITHUB_USER/splayer-music-source/main/dist/splayer-source.js
- * @changelog   初始构建
+ * @updateUrl   https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/dist/splayer-source.js
+ * @changelog   自动构建 9bd61a9
  */
 
-const CONFIG_URL = "https://raw.githubusercontent.com/YOUR_GITHUB_USER/splayer-music-source/main/config/providers.json";
-const RUNTIME_URL = "https://raw.githubusercontent.com/YOUR_GITHUB_USER/splayer-music-source/main/config/runtime.json";
-const REPOSITORY = "YOUR_GITHUB_USER/splayer-music-source";
+const CONFIG_URL = "https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/config/providers.json";
+const RUNTIME_URL = "https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/config/runtime.json";
+const REPOSITORY = "LycheeGuo/musicAPI";
 const EMBEDDED_CONFIG = {"schemaVersion":1,"revision":1,"defaults":{"configTtlMs":900000,"providerTimeoutMs":3500,"totalBudgetMs":18000,"maxAttempts":4,"circuitBreaker":{"failureThreshold":3,"cooldownMs":600000},"qualityFallback":["hi-res","lossless","hq","sq","lq"]},"providers":[{"id":"example-authorized-api","name":"Example Authorized API","enabled":false,"priority":100,"platforms":["wy","tx","kg"],"description":"示例模板。请替换为你有权使用的公开/自建/官方授权 API。","transport":{"method":"GET","url":"https://example.invalid/music/url?source={source}&id={id}&quality={quality}","responseType":"json","headers":{},"qualityMap":{"lq":"128k","sq":"192k","hq":"320k","lossless":"flac","hi-res":"hires"},"success":{"status":[200],"bodyPath":"code","equals":0},"result":{"urlPath":"url","expirePath":"expire","expireUnit":"ms"}},"healthcheck":{"enabled":false,"method":"GET","url":"https://example.invalid/health","expectedStatus":[200],"timeoutMs":5000}},{"id":"example-local-resolver","name":"Example Local Resolver","enabled":false,"priority":200,"platforms":["wy","tx","kg"],"description":"如果以后有自己的本地/局域网 resolver，可启用此模板。","transport":{"method":"GET","url":"http://127.0.0.1:9863/resolve?source={source}&id={id}&name={name}&singer={singer}&quality={quality}","responseType":"json","headers":{},"qualityMap":{"lq":"lq","sq":"sq","hq":"hq","lossless":"lossless","hi-res":"hi-res"},"success":{"status":[200]},"result":{"urlPath":"url","expirePath":"expire","expireUnit":"ms"}},"healthcheck":{"enabled":false,"method":"GET","url":"http://127.0.0.1:9863/health","expectedStatus":[200],"timeoutMs":3000}}]};
 
 const SUPPORTED_SOURCES = ["wy", "tx", "kg"];
