@@ -1,0 +1,16 @@
+{
+  "name": "splayer-local-youtube-resolver",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node resolver.mjs",
+    "test": "node --test matcher.test.mjs"
+  },
+  "dependencies": {
+    "youtubei.js": "18.0.0"
+  }
+}
