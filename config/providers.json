@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 3,
+  "revision": 4,
   "defaults": {
     "configTtlMs": 900000,
     "providerTimeoutMs": 3500,
@@ -19,18 +19,12 @@
     ]
   },
   "youtubeFallback": {
-    "enabled": true,
-    "maxInstances": 3,
+    "enabled": false,
+    "maxInstances": 0,
     "searchLimit": 8,
     "minScore": 45,
     "durationToleranceSec": 35,
-    "instances": [
-      "https://pipedapi.kavin.rocks",
-      "https://pipedapi.leptons.xyz",
-      "https://piped-api.privacy.com.de",
-      "https://pipedapi.adminforge.de",
-      "https://api.piped.private.coffee"
-    ]
+    "instances": []
   },
   "providers": [
     {
@@ -117,6 +111,52 @@
       },
       "healthcheck": {
         "enabled": false
+      }
+    },
+    {
+      "id": "koyeb-youtube-cloud",
+      "name": "Koyeb YouTube Cloud",
+      "enabled": false,
+      "priority": 30,
+      "platforms": [
+        "wy",
+        "tx",
+        "kg"
+      ],
+      "description": "部署 resolver/ 到 Koyeb 后，将 YOUR_KOYEB_APP 替换为实际应用域名并启用。仅处理公开可播放 YouTube 内容。",
+      "transport": {
+        "method": "GET",
+        "url": "https://YOUR_KOYEB_APP.koyeb.app/resolve?name={name}&singer={singer}&duration={duration}&quality={requestedQuality}",
+        "responseType": "json",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "qualityMap": {
+          "lq": "lq",
+          "sq": "sq",
+          "hq": "hq",
+          "lossless": "lossless",
+          "hi-res": "hi-res"
+        },
+        "success": {
+          "status": [
+            200
+          ],
+          "bodyPath": "code",
+          "equals": 0
+        },
+        "result": {
+          "urlPath": "url"
+        }
+      },
+      "healthcheck": {
+        "enabled": false,
+        "method": "GET",
+        "url": "https://YOUR_KOYEB_APP.koyeb.app/health",
+        "expectedStatus": [
+          200
+        ],
+        "timeoutMs": 5000
       }
     },
     {
