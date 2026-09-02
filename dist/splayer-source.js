@@ -1,15 +1,17 @@
 /**
  * @name        Unified Music Source
  * @id          local.unified-music-source
- * @version     1.0.12
+ * @version     1.0.13
  * @description 高音质优先、多音源聚合、自动降级、酷我/咪咕跨平台兜底
  * @author      LycheeGuo
  * @homepage    https://github.com/LycheeGuo/musicAPI
  * @type        source
  * @apiLevel    1
  * @updateUrl   https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/dist/splayer-source.js
- * @changelog   自动构建 f19c804
+ * @changelog   自动构建 99ce75f · upstream gen 1
  */
+
+const EMBEDDED_UPSTREAM_STATUS = {"schemaVersion":1,"generation":1,"sources":{"pdone-sixyin":{"repo":"pdone/lx-music-source","path":"sixyin/latest.js","sha":"aa1345bdc9863e397012ff6ff70e406aff617eb3","state":"ok"},"pdone-huibq":{"repo":"pdone/lx-music-source","path":"huibq/latest.js","sha":"f2028068db448a9e0b738106112eb300bcefbcc2","state":"ok"},"pdone-flower":{"repo":"pdone/lx-music-source","path":"flower/latest.js","sha":"4be6e47f3e1365d9b817129f6ae1355ea7676721","state":"ok"},"pdone-lx":{"repo":"pdone/lx-music-source","path":"lx/latest.js","sha":"88f9b8d3696a436bdd48fda533a21a2429bcb999","state":"ok"},"pdone-ikun":{"repo":"pdone/lx-music-source","path":"ikun/latest.js","sha":"acaf03a60ff8b9e3bca20e4afdf4d7c36bcfd38a","state":"ok"},"pdone-grass":{"repo":"pdone/lx-music-source","path":"grass/latest.js","sha":"97b765159eaacd082daaff65136950a3d5b5de21","state":"ok"},"pdone-juhe":{"repo":"pdone/lx-music-source","path":"juhe/latest.js","sha":"da25829e493dd37554aecc9e59b2272eb75874b8","state":"ok"},"pdone-qdy":{"repo":"pdone/lx-music-source","path":"qdy/latest.js","sha":"35c77a694ede58edb29151c4816ac25c9db73e82","state":"ok"}}};
 
 const CONFIG_URL = "https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/config/providers.json";
 const RUNTIME_URL = "https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/config/runtime.json";
