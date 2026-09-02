@@ -1,14 +1,14 @@
 /**
  * @name        Unified Music Source
  * @id          local.unified-music-source
- * @version     1.0.11
+ * @version     1.0.12
  * @description 高音质优先、多音源聚合、自动降级、酷我/咪咕跨平台兜底
  * @author      LycheeGuo
  * @homepage    https://github.com/LycheeGuo/musicAPI
  * @type        source
  * @apiLevel    1
  * @updateUrl   https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/dist/splayer-source.js
- * @changelog   自动构建 0def514
+ * @changelog   自动构建 f19c804
  */
 
 const CONFIG_URL = "https://raw.githubusercontent.com/LycheeGuo/musicAPI/main/config/providers.json";
