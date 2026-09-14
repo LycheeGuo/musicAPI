@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generation": 1,
+  "generation": 2,
   "sources": {
     "pdone-sixyin": {
       "repo": "pdone/lx-music-source",
@@ -23,7 +23,7 @@
     "pdone-lx": {
       "repo": "pdone/lx-music-source",
       "path": "lx/latest.js",
-      "sha": "88f9b8d3696a436bdd48fda533a21a2429bcb999",
+      "sha": "c4d24ffae99ae1aa7d71456ea04bf50f1cb6053b",
       "state": "ok"
     },
     "pdone-ikun": {
@@ -47,7 +47,7 @@
     "pdone-qdy": {
       "repo": "pdone/lx-music-source",
       "path": "qdy/latest.js",
-      "sha": "35c77a694ede58edb29151c4816ac25c9db73e82",
+      "sha": "d861aa245dfe83a64ec55f3a51351f844335de4e",
       "state": "ok"
     }
   }
