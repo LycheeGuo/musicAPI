@@ -28,7 +28,7 @@ export function validateProviderConfig(config) {
 
   const ids = new Set();
   const providersById = new Map();
-  for (const [index, p] of (config?.providers || []).entries()) {
+  for (const [index, p] of (Array.isArray(config?.providers) ? config.providers : []).entries()) {
     const prefix = `providers[${index}]`;
     if (!p?.id || !/^[a-z0-9][a-z0-9._-]+$/.test(p.id)) errors.push(`${prefix}.id 不合法`);
     if (ids.has(p?.id)) errors.push(`${prefix}.id 重复: ${p?.id}`);
@@ -75,7 +75,7 @@ export function validateProviderConfig(config) {
         errors.push("crossFallback.platforms 必须是非空数组");
       }
       const seenCross = new Set();
-      for (const [index, platform] of (cross.platforms || []).entries()) {
+      for (const [index, platform] of (Array.isArray(cross.platforms) ? cross.platforms : []).entries()) {
         const prefix = `crossFallback.platforms[${index}]`;
         if (!crossPlatforms.includes(platform?.id)) errors.push(`${prefix}.id 只能是 kw/mg`);
         if (seenCross.has(platform?.id)) errors.push(`${prefix}.id 重复: ${platform?.id}`);

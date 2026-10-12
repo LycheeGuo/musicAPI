@@ -6,7 +6,7 @@
 - 只支持 SPlayer 当前实际播放链中的 `wy / tx / kg`
 - 多 Provider 顺序回退
 - GitHub 上的 `config/providers.json` 可热更新，不要求每次都升级插件
-- GitHub Actions 仅做健康检查和上游版本观察，不执行、不拼接未知上游脚本
+- GitHub Actions 下载并校验上游，仅在已审查 Huibq 协议范围内同步地址；未知脚本只观测，不执行或拼接
 - 插件代码变更后，`dist/splayer-source.js` 自动生成新版本，SPlayer 用 `@updateUrl` 检查更新
 
 ## 两层更新
@@ -28,7 +28,7 @@ SPlayer 插件会定期读取：
 2. 构建
 3. 测试
 4. 生成 `dist/splayer-source.js`
-5. 版本号使用 `1.0.${GITHUB_RUN_NUMBER}`
+5. 实际内容变化时从现有版本递增 patch，重复构建保持版本不变
 6. 自动 commit
 
 SPlayer 会从固定的 `raw.githubusercontent.com/.../dist/splayer-source.js` 检查新版。
@@ -44,3 +44,5 @@ SPlayer 会从固定的 `raw.githubusercontent.com/.../dist/splayer-source.js` �
 ## 安全边界
 
 远程配置只允许 JSON 数据，不支持从 GitHub 下载并 `eval`/执行远端 JS。
+
+每周自动更新流程、接口边界与失败处理见 [AUTO_UPDATE.md](AUTO_UPDATE.md)。

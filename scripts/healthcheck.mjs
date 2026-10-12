@@ -37,6 +37,7 @@ async function probe(p) {
       latency: bucketLatency(Date.now() - started)
     };
   } catch (e) {
+    console.warn(`${p.id}: probe failed (${e.message})`);
     const prev = runtime.providers[p.id] || {};
     const failureStreak = Math.min(10, Number(prev.failureStreak || 0) + 1);
     return {
@@ -62,3 +63,12 @@ runtime.providers = nextProviders;
 
 const changed = await writeJsonIfChanged("config/runtime.json", runtime);
 console.log(changed ? "runtime.json updated" : "runtime.json unchanged");
+
+const enabledProbes = config.providers.filter(p => p.enabled && p.healthcheck?.enabled).length;
+const summary = `## Provider health\nEnabled probes: ${enabledProbes}. Unknown means untested, not healthy.\n` +
+  Object.entries(nextProviders).map(([id, value]) => `- ${id}: ${value.state}`).join("\n") + "\n";
+console.log(summary);
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const fs = await import("node:fs/promises");
+  await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
+}

@@ -6,40 +6,63 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
+
+concurrency:
+  group: repository-maintenance-${{ github.repository }}
+  cancel-in-progress: false
 
 jobs:
   watch:
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-      - name: Check upstreams
-        id: watch
-        run: |
-          npm run watch
-          if git diff --quiet -- upstreams/status.json; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
+      - run: npm run validate
+      - name: Download, verify and adapt reviewed upstreams
+        run: npm run watch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Commit upstream status if changed
-        if: steps.watch.outputs.changed == 'true'
+      - run: npm run validate
+      - run: npm run build
+      - run: npm test
+      - run: npm run check:build
+      - name: Save audit report and source snapshots (never executed)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: upstream-audit-${{ github.run_id }}
+          path: work/upstreams/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Publish verified changes only
+        env:
+          PUSH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add upstreams/status.json
-          git commit -m "chore: update upstream status [skip ci]"
-          git push
-      - name: Trigger plugin build
-        if: steps.watch.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run build.yml --ref main
+          git add upstreams/status.json config/providers.json dist/splayer-source.js
+          if git diff --cached --quiet; then
+            echo "No changes to publish" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git diff --cached --stat >> "$GITHUB_STEP_SUMMARY"
+          git commit -m "chore: synchronize verified upstreams and plugin"
+          auth=$(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin "HEAD:$TARGET_BRANCH"
+      - name: Explain failure
+        if: failure()
+        run: |
+          echo "::error::Verification or publication failed. No unverified plugin was published. See failed step and artifacts."
+          echo "## Failed: inspect the failed step; previous published files remain the fallback unless publication already completed." >> "$GITHUB_STEP_SUMMARY"
