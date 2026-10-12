@@ -37,7 +37,7 @@ SPlayer-Next 官方文档说明宿主有 LX 兼容层，部分原始脚本可单
 - 配置继续通过 GitHub JSON 热更新；失败时使用插件内嵌/缓存配置。
 - 主分支发布、健康检查与周更共享并发组；普通 push 若遇到外部同时提交会安全失败，不强推、不盲目重基合并生成文件。GitHub 的并发组最多保留一个 pending run，频繁提交可能替换旧的排队任务；最新任务从当前默认分支重新构建。
 - 写入任务只允许在默认分支触发，不从 PR 或 fork 发布。PR 校验是只读权限。
-- Actions 固定到已查询的完整 commit SHA；删除跨工作流 dispatch 和 `actions: write`。写权限只在需要提交的 job 启用，checkout 不保留凭据，推送步骤单独使用 token。
+- Actions 使用 Node 24 运行时版本，固定到已查询的完整 commit SHA；runner 固定为 Ubuntu 24.04；删除跨工作流 dispatch 和 `actions: write`。写权限只在需要提交的 job 启用，checkout 不保留凭据，推送步骤单独使用 token。
 - 自动提交不使用 `[skip ci]`，因此不会跳过人工 PR 检查。GitHub 的 `GITHUB_TOKEN` push 通常不会触发另一轮 workflow，本次发布已经先运行完整验证。
 - 仓库限制若禁止机器人推送，会显示明确失败，不绕过保护规则。启用 Actions，并在仓库策略中允许该工作流所需的 contents 写权限。
 
