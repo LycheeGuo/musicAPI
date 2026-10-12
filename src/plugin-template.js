@@ -108,7 +108,7 @@ async function refreshConfig(force = false, timeout = 1600) {
 
 function musicId(req) {
   const m = req.musicInfo || {};
-  return String(m.songmid || m.id || m.songId || m.hash || "");
+  return String((req.source === "kg" ? m.hash : "") || m.songmid || m.id || m.songId || m.hash || "");
 }
 
 function cacheKey(req) {

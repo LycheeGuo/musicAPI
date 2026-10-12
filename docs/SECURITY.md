@@ -8,6 +8,6 @@
 - Cookie/Token/账号凭据
 - 自动执行第三方混淆脚本
 
-`upstreams/` workflow 只观察公开仓库文件 SHA 是否变化，不复制或执行其代码。
+`upstreams/` workflow 下载公开源码到短期审查附件并核对 SHA；只同步已审查 Huibq 协议的允许地址，不执行上游 JS、不把未知代码并入插件。新协议、新密钥和新域名必须重新审查并测试。
 
 如果 Provider 需要私密凭据，不要放在 GitHub 配置或 SPlayer 插件里。应把凭据放在你控制的服务端，由插件访问服务端。

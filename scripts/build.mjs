@@ -1,32 +1,32 @@
 import fs from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { readJson, safeRepo, validateProviderConfig } from "./lib.mjs";
 
 const template = await fs.readFile("src/plugin-template.js", "utf8");
 const config = await readJson("config/providers.json");
-const upstreamStatus = await readJson("upstreams/status.json");
 const { errors } = validateProviderConfig(config);
-if (errors.length) throw new Error("providers.json 无效:\n" + errors.join("\n"));
-if (!upstreamStatus || upstreamStatus.schemaVersion !== 1 || !upstreamStatus.sources || typeof upstreamStatus.sources !== "object") {
-  throw new Error("upstreams/status.json 无效");
-}
+if (errors.length) throw new Error("providers.json invalid:\n" + errors.join("\n"));
+const pkg = await readJson("package.json");
+let previous = "";
+try { previous = await fs.readFile("dist/splayer-source.js", "utf8"); }
+catch (error) { if (error.code !== "ENOENT") throw error; }
 
 const repo =
   safeRepo(process.env.GITHUB_REPOSITORY) ||
   safeRepo(process.env.REPOSITORY) ||
   "YOUR_GITHUB_USER/musicAPI";
 
-const runNumber = String(process.env.GITHUB_RUN_NUMBER || "").trim();
-const version = String(process.env.BUILD_VERSION || (runNumber ? `1.0.${runNumber}` : "1.0.0"));
-if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`BUILD_VERSION 非法: ${version}`);
+const previousVersion = previous.match(/@version\s+(\d+\.\d+\.\d+)/)?.[1] || pkg.version;
+const version = String(process.env.BUILD_VERSION || previousVersion);
+if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`Invalid version: ${version}`);
 
 const updateUrl = `https://raw.githubusercontent.com/${repo}/main/dist/splayer-source.js`;
 const configUrl = `https://raw.githubusercontent.com/${repo}/main/config/providers.json`;
 const runtimeUrl = `https://raw.githubusercontent.com/${repo}/main/config/runtime.json`;
 const homepage = `https://github.com/${repo}`;
 const author = repo.split("/")[0];
-const sha = String(process.env.GITHUB_SHA || "").slice(0, 7);
-const upstreamGeneration = Number(upstreamStatus.generation || 0);
-const changelog = sha ? `自动构建 ${sha} · upstream gen ${upstreamGeneration}` : `初始构建 · upstream gen ${upstreamGeneration}`;
+const fingerprint = createHash("sha256").update(template).update(JSON.stringify(config)).update(repo).digest("hex").slice(0, 12);
+const changelog = `Verified build ${fingerprint}`;
 
 const values = {
   "__PLUGIN_VERSION__": version,
@@ -45,12 +45,11 @@ for (const [token, value] of Object.entries(values)) out = out.replaceAll(token,
 const left = out.match(/__[A-Z0-9_]+__/g);
 if (left?.length) throw new Error(`构建后仍存在未替换 token: ${[...new Set(left)].join(", ")}`);
 
-const upstreamMarker = `const EMBEDDED_UPSTREAM_STATUS = ${JSON.stringify(upstreamStatus)};`;
-const configMarker = "\n\nconst CONFIG_URL";
-const insertAt = out.indexOf(configMarker);
-if (insertAt < 0) throw new Error("无法定位 CONFIG_URL，不能嵌入 upstream status");
-out = `${out.slice(0, insertAt)}\n\n${upstreamMarker}${out.slice(insertAt)}`;
+if (!process.env.BUILD_VERSION && previous && out !== previous) {
+  const [major, minor, patch] = previousVersion.split(".").map(Number);
+  out = out.replace(`@version     ${version}`, `@version     ${major}.${minor}.${patch + 1}`);
+}
 
 await fs.mkdir("dist", { recursive: true });
 await fs.writeFile("dist/splayer-source.js", out, "utf8");
-console.log(`Built dist/splayer-source.js version=${version} repo=${repo} upstreamGeneration=${upstreamGeneration}`);
+console.log(out === previous ? "Plugin unchanged" : `Built dist/splayer-source.js repo=${repo}`);

@@ -139,3 +139,24 @@ test("all primary providers failing triggers Kuwo match and cross-provider resol
   assert.equal(miguSearchCalls, 1);
   assert.equal(crossResolveCalls, 1);
 });
+
+test("Huibq maps LX request and response into SPlayer and prefers Kugou hash", async () => {
+  const calls = [];
+  const { handlers } = await loadPlugin(async (url, options) => {
+    if (url.includes("lxmusicapi.onrender.com")) {
+      calls.push({ url, options });
+      return { status: 200, body: { code: 0, url: "https://media.example.test/huibq.mp3" } };
+    }
+    return { status: 500, body: {} };
+  });
+  const result = await handlers.musicUrl({ source: "kg", quality: "hq", musicInfo: { songmid: "other-id", hash: "HASH/123" } });
+  assert.equal(result.url, "https://media.example.test/huibq.mp3");
+  assert.equal(result.quality, "hq");
+  assert.match(calls[0].url, /\/url\/kg\/HASH%2F123\/320k$/);
+  assert.equal(calls[0].options.headers["X-Request-Key"], "share-v3");
+});
+
+test("unsupported source is rejected", async () => {
+  const { handlers } = await loadPlugin(async () => { throw new Error("should not request"); });
+  await assert.rejects(handlers.musicUrl({ source: "unknown" }), /unsupported source/);
+});
